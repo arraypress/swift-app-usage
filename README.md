@@ -34,7 +34,7 @@ Both places need **Full Disk Access**. A refusal is `AppUsageError.needsFullDisk
 
 ## Reading safely
 
-- **knowledgeC.db is never opened.** It is live (macOS writes it through a write-ahead log), so the database and its `-wal`/`-shm` are copied into a private temporary folder, read there, and the folder is deleted.
+- **knowledgeC.db is never opened.** It is live (macOS writes it through a write-ahead log), so the database and its `-wal`/`-shm` are copied into a private temporary folder, read there, and the folder is deleted ([swift-sqlite-reader](https://github.com/arraypress/swift-sqlite-reader)'s snapshot).
 - **Biome files are read as bytes.** They are preallocated and appended to while read; every offset is bounds-checked, each payload's CRC-32 is verified, and only entries in the *written* state count — Biome prunes history by marking entries deleted in place, and reading those would bring back history macOS has let go of.
 - Rows another device synced into knowledgeC.db (`ZSOURCE.ZDEVICEID` set) are left out: this library reports this Mac.
 
@@ -67,7 +67,7 @@ On one Mac, a month of history:
 
 ## Requirements
 
-macOS 14 or later. Swift 6.2.
+macOS 14 or later. Swift 6.2. One dependency: [swift-sqlite-reader](https://github.com/arraypress/swift-sqlite-reader), which copies and reads knowledgeC.db.
 
 ## Licence
 

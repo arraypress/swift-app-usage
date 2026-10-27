@@ -4,38 +4,23 @@
 //
 //  Created by David Sherlock on 2026.
 //
-//  Telling "macOS said no" from "it is not there". Privacy protection
-//  refuses with EPERM (TCC) and plain permissions with EACCES — but
-//  Foundation reports a refusal on a PARENT folder as "file not found", so
-//  every check here asks the kernel directly with open(2)/opendir(3).
+//  Telling "macOS said no" from "it is not there" when listing a folder.
+//  Privacy protection refuses with EPERM (TCC) and plain permissions with
+//  EACCES — but Foundation reports a refusal on a PARENT folder as "file not
+//  found", so the listing asks the kernel directly with opendir(3). Files
+//  and errors are classified by swift-sqlite-reader's FileChecks.
 //
 
 import Foundation
+import SQLiteReader
 
-/// Classifying paths and file errors.
+/// Listing folders.
 enum PermissionCheck {
 
-    /// What opening a path for reading finds.
-    enum Access: Equatable {
-        case readable
-        case missing
-        case refused
-    }
-
-    /// Whether a file or folder can be opened for reading.
-    static func access(_ path: String) -> Access {
-        let descriptor = open(path, O_RDONLY)
-        if descriptor >= 0 {
-            close(descriptor)
-            return .readable
-        }
-        return isRefusal(errno: errno) ? .refused : .missing
-    }
-
     /// A folder's entries, or why not.
-    static func entries(of path: String) -> (names: [String], access: Access) {
+    static func entries(of path: String) -> (names: [String], access: FileAccess) {
         guard let directory = opendir(path) else {
-            return ([], isRefusal(errno: errno) ? .refused : .missing)
+            return ([], FileChecks.isRefusal(errno: errno) ? .refused : .missing)
         }
         defer { closedir(directory) }
         var names: [String] = []
@@ -47,16 +32,4 @@ enum PermissionCheck {
         }
         return (names, .readable)
     }
-
-    /// Whether an error is a refusal to read.
-    static func isRefusal(_ error: any Error) -> Bool {
-        let error = error as NSError
-        if error.domain == NSCocoaErrorDomain, error.code == NSFileReadNoPermissionError { return true }
-        if error.domain == NSPOSIXErrorDomain, error.code == Int(EPERM) || error.code == Int(EACCES) { return true }
-        if let underlying = error.userInfo[NSUnderlyingErrorKey] as? NSError { return isRefusal(underlying) }
-        return false
-    }
-
-    /// Whether an errno is a refusal.
-    static func isRefusal(errno code: Int32) -> Bool { code == EPERM || code == EACCES }
 }

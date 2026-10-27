@@ -11,6 +11,7 @@
 //
 
 import Foundation
+import SQLiteReader
 
 /// One stream under `Library/Biome/streams/restricted`.
 struct BiomeStream {
@@ -19,7 +20,7 @@ struct BiomeStream {
     let folder: URL
 
     /// Whether the folder can be read, is missing, or is refused.
-    var access: PermissionCheck.Access { PermissionCheck.access(folder.path) }
+    var access: FileAccess { FileChecks.access(folder.path) }
 
     /// Whether the folder is there and readable.
     var exists: Bool { access == .readable }
@@ -57,7 +58,7 @@ struct BiomeStream {
             do {
                 data = try Data(contentsOf: file, options: .mappedIfSafe)
             } catch {
-                if PermissionCheck.isRefusal(error) { throw .needsFullDiskAccess(file.path) }
+                if FileChecks.isRefusal(error) { throw .needsFullDiskAccess(file.path) }
                 // Rotated away between listing and reading: nothing to read.
                 continue
             }

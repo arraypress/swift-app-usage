@@ -11,6 +11,7 @@
 //
 
 import Foundation
+import SQLiteReader
 
 /// A Mac's app usage history.
 public final class UsageStore: Sendable {
@@ -41,9 +42,9 @@ public final class UsageStore: Sendable {
             refused = biome.folder.path
         case .missing:
             // A refusal higher up reads as missing here; ask the stream root.
-            if PermissionCheck.access(locations.biomeStreams.path) == .refused { refused = locations.biomeStreams.path }
+            if FileChecks.access(locations.biomeStreams.path) == .refused { refused = locations.biomeStreams.path }
         }
-        switch PermissionCheck.access(locations.knowledgeDatabase.path) {
+        switch FileChecks.access(locations.knowledgeDatabase.path) {
         case .readable: return .knowledge
         case .refused: throw .needsFullDiskAccess(locations.knowledgeDatabase.path)
         case .missing: break
